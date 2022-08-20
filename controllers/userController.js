@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
+import Jwt from "jsonwebtoken";
 
 const createUser = async (req, res) => {
   try {
@@ -19,16 +20,12 @@ const createUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-
-    console.log(req.body);
-
     const user = await User.findOne({ username });
 
     let same = false;
 
     if (user) {
       same = await bcrypt.compare(password, user.password);
-      console.log("same", same);
     } else {
       return res.status(401).json({
         succeded: false,
@@ -37,7 +34,10 @@ const loginUser = async (req, res) => {
     }
 
     if (same) {
-      res.status(200).send("Giriş Yaptınız!");
+      res.status(200).json({
+        user,
+        token: createToken(user._id),
+      });
     } else {
       res.status(401).json({
         succeded: false,
@@ -50,6 +50,12 @@ const loginUser = async (req, res) => {
       err,
     });
   }
+};
+
+const createToken = (userId) => {
+  return Jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
 };
 
 export { createUser, loginUser };
